@@ -122,15 +122,60 @@
         .result a:hover {
             color: #64a6f3;
         }
+        
+        .search-tags {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        
+        .search-tag {
+            background-color: #2a2a2a;
+            color: #f0f0f0;
+            padding: 8px 16px;
+            margin: 5px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        
+        .search-tag:hover {
+            background-color: #3a3a3a;
+        }
+        
+        .result .snippet {
+            max-height: 150px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #2a2a2a;
+            border-radius: 5px;
+        }
+        
+        .recommender-info {
+            font-style: italic;
+            font-size: 0.9em;
+            margin-bottom: 15px;
+            color: #b0b0b0;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Cultural Radar</h1>
         <form id="searchForm">
-            <input type="text" name="keyword" placeholder="Explore culture..." required>
+            <input type="text" name="keyword" id="searchInput" placeholder="Explore culture..." required>
             <button type="submit">Discover</button>
         </form>
+        <div class="search-tags">
+            <span class="search-tag" data-tag="theatre">Theatre</span>
+            <span class="search-tag" data-tag="youtube">YouTube</span>
+            <span class="search-tag" data-tag="tv">TV</span>
+            <span class="search-tag" data-tag="art">Art</span>
+            <span class="search-tag" data-tag="music">Music</span>
+            <span class="search-tag" data-tag="books">Books</span>
+        </div>
         <div id="loading">
             <div class="spinner"></div>
             <p>Curating recommendations...</p>
@@ -141,7 +186,18 @@
     <script>
         document.getElementById('searchForm').addEventListener('submit', function(event) {
             event.preventDefault();
-            const formData = new FormData(this);
+            performSearch();
+        });
+
+        document.querySelectorAll('.search-tag').forEach(tag => {
+            tag.addEventListener('click', function() {
+                document.getElementById('searchInput').value = this.dataset.tag;
+                performSearch();
+            });
+        });
+
+        function performSearch() {
+            const formData = new FormData(document.getElementById('searchForm'));
             const loadingDiv = document.getElementById('loading');
             const resultsDiv = document.getElementById('results');
             
@@ -162,7 +218,7 @@
                 resultsDiv.innerHTML = '<p>An error occurred while searching. Please try again.</p>';
                 console.error('Error:', error);
             });
-        });
+        }
 
         function displayArticles(data) {
             const resultsDiv = document.getElementById('results');
@@ -174,11 +230,12 @@
                 const proxyImageUrl = result.image ? `/proxy_image?url=${encodeURIComponent(result.image)}` : null;
                 resultDiv.innerHTML = `
                     ${proxyImageUrl 
-                        ? `<img src="${proxyImageUrl}" alt="${result.title}" onerror="this.onerror=null; console.error('Image failed to load:', this.src); this.parentElement.innerHTML='<div class=\'no-image\'>No image available</div>';">`
-                        : '<div class="no-image">No image available</div>'}
+                        ? `<img src="${proxyImageUrl}" alt="${result.title}" onerror="this.onerror=null; this.src='/static/placeholder.jpg';">`
+                        : '<img src="/static/placeholder.jpg" alt="Placeholder image">'}
                     <h2>${result.title}</h2>
                     <p><strong>Recommended by:</strong> ${result.recommended_by}</p>
-                    <p>${result.snippet}</p>
+                    <p class="recommender-info">${result.recommender_info}</p>
+                    <div class="snippet">${result.snippet}</div>
                     <p><a href="${result.link}" target="_blank">Read more</a></p>
                 `;
                 resultsDiv.appendChild(resultDiv);
