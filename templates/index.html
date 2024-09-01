@@ -159,6 +159,23 @@
             margin-bottom: 15px;
             color: #b0b0b0;
         }
+        
+        .button-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+        }
+        .button {
+            padding: 8px 16px;
+            background-color: #4a4a4a;
+            color: #f0f0f0;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: background-color 0.3s ease;
+        }
+        .button:hover {
+            background-color: #5a5a5a;
+        }
     </style>
 </head>
 <body>
@@ -178,7 +195,7 @@
         </div>
         <div id="loading">
             <div class="spinner"></div>
-            <p>Curating recommendations...</p>
+            <p id="loading-text">Curating recommendations...</p>
         </div>
         <div id="results"></div>
     </div>
@@ -199,10 +216,53 @@
         function performSearch() {
             const formData = new FormData(document.getElementById('searchForm'));
             const loadingDiv = document.getElementById('loading');
+            const loadingText = document.getElementById('loading-text');
             const resultsDiv = document.getElementById('results');
             
             loadingDiv.style.display = 'block';
             resultsDiv.innerHTML = '';
+
+            const loadingMessages = [
+                "Curating recommendations...",
+                "Tuning the cultural radar...",
+                "Scanning the artistic horizon...",
+                "Decoding the zeitgeist...",
+                "Consulting the muses...",
+                "Brewing a pot of inspiration...",
+                "Channeling the spirit of creativity...",
+                "Polishing the looking glass of culture...",
+                "Calibrating the taste-o-meter...",
+                "Sifting through the sands of time...",
+                "Navigating the labyrinth of art...",
+                "Unrolling the scrolls of wisdom...",
+                "Dusting off the tomes of creativity...",
+                "Deciphering the hieroglyphs of pop culture...",
+                "Tuning the strings of the cosmic lyre...",
+                "Adjusting the lens of cultural perception...",
+                "Stirring the cauldron of artistic alchemy...",
+                "Focusing the kaleidoscope of imagination...",
+                "Winding up the clockwork of inspiration...",
+                "Aligning the stars of artistic influence...",
+                "Polishing the crystal ball of trends...",
+                "Untangling the web of cultural connections...",
+                "Decanting the finest vintage of ideas...",
+                "Tuning the frequency of the creative wavelength...",
+                "Summoning the spirits of artistic genius...",
+                "Unlocking the vault of cultural treasures...",
+                "Mapping the constellations of creativity...",
+                "Calibrating the compass of cultural navigation...",
+                "Focusing the microscope on artistic details...",
+                "Adjusting the sails on the ship of imagination...",
+                "Igniting the spark of creative revelation..."
+            ];
+
+            let messageIndex = 0;
+            loadingText.textContent = loadingMessages[messageIndex]; // Set initial message immediately
+
+            const messageInterval = setInterval(() => {
+                messageIndex = (messageIndex + 1) % loadingMessages.length;
+                loadingText.textContent = loadingMessages[messageIndex];
+            }, 4000); // Change message every 4 seconds
 
             fetch('/search', {
                 method: 'POST',
@@ -210,10 +270,12 @@
             })
             .then(response => response.json())
             .then(data => {
+                clearInterval(messageInterval);
                 loadingDiv.style.display = 'none';
                 displayArticles(data);
             })
             .catch(error => {
+                clearInterval(messageInterval);
                 loadingDiv.style.display = 'none';
                 resultsDiv.innerHTML = '<p>An error occurred while searching. Please try again.</p>';
                 console.error('Error:', error);
@@ -236,7 +298,12 @@
                     <p><strong>Recommended by:</strong> ${result.recommended_by}</p>
                     <p class="recommender-info">${result.recommender_info}</p>
                     <div class="snippet">${result.snippet}</div>
-                    <p><a href="${result.link}" target="_blank">Read more</a></p>
+                    <div class="button-container">
+                        <a href="${result.link}" target="_blank" class="button">Read Guardian Article</a>
+                        ${result.recommendation_link 
+                            ? `<a href="${result.recommendation_link}" target="_blank" class="button">View Recommendation</a>`
+                            : ''}
+                    </div>
                 `;
                 resultsDiv.appendChild(resultDiv);
             });

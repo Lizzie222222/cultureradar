@@ -33,10 +33,19 @@ def search():
             logger.warning(f"No articles found for keyword: {keyword}")
             return jsonify([])
         formatted_results = format_results_with_ai(results, keyword)
-        return jsonify(formatted_results)
+        return jsonify(formatted_results)  # Return all results
     except Exception as e:
         logger.exception(f"Error occurred during search for keyword '{keyword}': {str(e)}")
         return jsonify({"error": "An error occurred during the search. Please try again."}), 500
+
+def extract_all_links(soup):
+    links = {}
+    content = soup.find('div', class_='content__article-body')
+    if content:
+        for p in content.find_all('p', class_='dcr-uj7d5w'):
+            for a in p.find_all('a', href=True):
+                links[a.text.strip()] = a['href']
+    return links
 
 def scrape_guardian_on_my_radar(keyword):
     base_url = 'https://www.theguardian.com'
@@ -74,9 +83,11 @@ def scrape_guardian_on_my_radar(keyword):
                     snippet = extract_snippet(article_soup, keyword)
                     recommended_by = extract_recommended_by(article_soup)
                     recommender_info = extract_recommender_info(article_soup)
+                    all_links = extract_all_links(article_soup)
                     
                     logger.info(f"Found article: {title}")
                     logger.info(f"Image URL: {image}")
+                    logger.info(f"All links: {all_links}")
                     
                     articles.append({
                         'title': title,
@@ -84,13 +95,13 @@ def scrape_guardian_on_my_radar(keyword):
                         'image': image,
                         'link': article_url,
                         'recommended_by': recommended_by,
-                        'recommender_info': recommender_info
+                        'recommender_info': recommender_info,
+                        'all_links': all_links
                     })
                 except Exception as e:
                     logger.error(f"Error processing article {article_url}: {e}")
                     continue
     
-    logger.info(f"Scraped {len(articles)} articles containing the keyword '{keyword}'")
     return articles
 
 def extract_recommender_info(soup):
@@ -182,76 +193,66 @@ def extract_recommended_by(soup):
 
 def format_results_with_ai(results, keyword):
     formatted_results = []
-    synonyms = {
-        'film': ['movie', 'cinema'],
-        'movie': ['film', 'cinema'],
-        'tv': ['television', 'series', 'show'],
-        'music': ['song', 'album', 'artist'],
-        'book': ['novel', 'literature']
-    }
-
-    keyword_list = [keyword] + synonyms.get(keyword.lower(), [])
-    keyword_string = ', '.join(f"'{k}'" for k in keyword_list)
-
     for result in results:
-        if len(formatted_results) >= 3:
-            break
-
         prompt = f"""You are reviewing an article about a famous person's cultural recommendations. 
-        Extract detailed information about {keyword_string} from the following article:
+        Extract detailed information about {keyword} from the following article:
 
         Title: {result['title']}
         Snippet: {result['snippet']}
         Link: {result['link']}
         Image: {result['image']}
 
-        The title must be the specific name of the recommended or favourite {keyword_string} from the article. 
+        The title must be the specific name of the recommended {keyword} from the article. 
         Also, find the name of the person giving the recommendation and a brief description of who they are.
+        Choose the most relevant link from the following list to be used as the recommendation link:
+        {json.dumps(result['all_links'])}
+
         If no relevant information is found, say 'No relevant information'.
         Format the response as:
         Title: [Recommended {keyword}]
         Recommended by: [Name of the person giving the recommendation]
         Recommender info: [Brief description of the person giving the recommendation]
-        Snippet: [The opinion or insights of the person giving the recommendation. Relevant information or direct quotes relevant about the recommendation, or a summary of the article.]
-        You don't have to find the exact {keyword}; you can also make an educated guess about their recommendation. E.g., Film, movie, cinema, etc. or music, song, album, artist, etc.
+        Snippet: [Relevant information or direct quotes about the recommendation, excluding the recommendation link]
+        Recommended link: [The full URL of the most relevant link from the provided list]
         """
-        print(f"Sending prompt to OpenAI: {prompt}")
+        
         response = openai.ChatCompletion.create(
             model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": prompt}
             ],
-            max_tokens=150
+            max_tokens=200
         )
         ai_result = response.choices[0].message['content'].strip()
-        print(f"Received AI result: {ai_result}")
         
         if ai_result == "No relevant information":
-            continue  # Skip this result if no relevant information is found
+            continue
 
-        # Extract title, recommended_by, recommender_info, and snippet from AI result
+        # Extract information from AI result
         title_match = re.search(r'Title: (.+)', ai_result)
         recommended_by_match = re.search(r'Recommended by: (.+)', ai_result)
         recommender_info_match = re.search(r'Recommender info: (.+)', ai_result)
         snippet_match = re.search(r'Snippet: (.+)', ai_result, re.DOTALL)
+        recommended_link_match = re.search(r'Recommended link: (.+)', ai_result)
         
-        if title_match and recommended_by_match and recommender_info_match and snippet_match:
-            title = title_match.group(1).strip()
-            recommended_by = recommended_by_match.group(1).strip()
-            recommender_info = recommender_info_match.group(1).strip()
-            snippet = snippet_match.group(1).strip()
+        if all([title_match, recommended_by_match, recommender_info_match, snippet_match, recommended_link_match]):
+            recommendation_link = recommended_link_match.group(1).strip()
+            # Ensure the link is a full URL
+            if not recommendation_link.startswith(('http://', 'https://')):
+                recommendation_link = f"https://{recommendation_link}"
             
             formatted_results.append({
-                'title': title,
-                'snippet': snippet,
+                'title': title_match.group(1).strip(),
+                'snippet': snippet_match.group(1).strip(),
                 'image': result['image'],
-                'recommended_by': recommended_by,
-                'recommender_info': recommender_info,
-                'link': result['link']
+                'recommended_by': recommended_by_match.group(1).strip(),
+                'recommender_info': recommender_info_match.group(1).strip(),
+                'link': result['link'],
+                'recommendation_link': recommendation_link
             })
 
-    return formatted_results  # Return only the relevant results (up to 3)
+    return formatted_results
 
 @app.route('/proxy_image')
 def proxy_image():
