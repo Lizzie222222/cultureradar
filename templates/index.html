@@ -19,9 +19,9 @@
             min-height: 100vh;
         }
         .container {
-            max-width: 800px;
-            width: 100%;
-            padding: 40px 20px;
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 20px;
             box-sizing: border-box;
         }
         h1 {
@@ -31,14 +31,20 @@
             margin-bottom: 30px;
             color: #f0f0f0;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            cursor: pointer; /* Make the title clickable */
+            transition: color 0.3s ease;
+        }
+        h1:hover {
+            color: #64a6f3; /* Change color on hover */
         }
         #searchForm {
             display: flex;
             justify-content: center;
+            align-items: center;
             margin-bottom: 40px;
         }
         input[type="text"] {
-            width: 70%;
+            width: 60%;
             padding: 12px;
             font-size: 16px;
             background-color: #2a2a2a;
@@ -46,7 +52,7 @@
             border-radius: 25px 0 0 25px;
             color: #f0f0f0;
         }
-        button {
+        #searchButton {
             padding: 12px 24px;
             font-size: 16px;
             background-color: #4a4a4a;
@@ -56,8 +62,24 @@
             cursor: pointer;
             transition: background-color 0.3s ease;
         }
-        button:hover {
+        #searchButton:hover {
             background-color: #5a5a5a;
+        }
+        #toggleView {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 12px;
+            margin-left: 10px;
+            transition: transform 0.3s ease;
+        }
+        #toggleView:hover {
+            transform: scale(1.1);
+        }
+        #toggleView svg {
+            width: 24px;
+            height: 24px;
+            stroke: #f0f0f0;
         }
         #loading {
             display: none;
@@ -77,52 +99,102 @@
             100% { transform: rotate(360deg); }
         }
         .result {
-            margin-bottom: 40px;
-            background-color: #1a1a1a;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transition: transform 0.3s ease;
-        }
-        .result:hover {
-            transform: translateY(-5px);
-        }
-        .result img {
-            width: 100%;
-            height: 200px;
-            object-fit: cover;
-            border-radius: 5px;
-            margin-bottom: 20px;
-        }
-        .no-image {
             background-color: #2a2a2a;
-            height: 200px;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-bottom: 20px;
-            border-radius: 5px;
-            font-style: italic;
-            color: #888;
+            flex-direction: column;
         }
+
+        .result .image-container {
+            width: 100%;
+            padding-top: 56.25%; /* 16:9 aspect ratio */
+            position: relative;
+            overflow: hidden;
+        }
+
+        .result .image-container img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .result .content {
+            padding: 25px; /* Increased padding to accommodate larger title */
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
         .result h2 {
             font-family: 'Playfair Display', serif;
-            margin-top: 0;
-            font-size: 1.8rem;
+            font-size: 1.8em; /* Increased from 1.5em */
+            font-weight: 700;
+            margin: 0 0 20px 0; /* Increased bottom margin */
             color: #f0f0f0;
+            line-height: 1.2;
+            text-align: center;
+            padding: 0 10px; /* Added padding for better spacing on smaller screens */
         }
-        .result p {
+
+        /* Responsive font size for smaller screens */
+        @media (max-width: 768px) {
+            .result h2 {
+                font-size: 1.6em;
+            }
+        }
+
+        .result p,
+        .result .snippet {
+            margin: 10px 0;
+            text-align: justify;
+        }
+
+        .result .recommended-by {
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 5px;
+        }
+
+        .result .recommender-info {
+            font-style: italic;
+            text-align: center;
             margin-bottom: 15px;
         }
-        .result a {
-            color: #4a90e2;
+
+        .result .snippet {
+            font-size: 0.9em;
+            line-height: 1.4;
+            flex-grow: 1;
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+        }
+
+        .button {
+            padding: 8px 12px;
+            font-size: 0.9em;
+            text-align: center;
             text-decoration: none;
-            transition: color 0.3s ease;
+            background-color: #4a4a4a;
+            color: #f0f0f0;
+            border-radius: 4px;
+            transition: background-color 0.3s ease;
+            flex: 1;
+            margin: 0 5px;
         }
-        .result a:hover {
-            color: #64a6f3;
+
+        .button:hover {
+            background-color: #5a5a5a;
         }
-        
+
         .search-tags {
             display: flex;
             flex-wrap: wrap;
@@ -151,6 +223,15 @@
             padding: 10px;
             background-color: #2a2a2a;
             border-radius: 5px;
+            color: #f0f0f0;
+            text-decoration: none;
+            cursor: default;
+        }
+        
+        .result .snippet a {
+            color: #f0f0f0;
+            text-decoration: none;
+            pointer-events: none;
         }
         
         .recommender-info {
@@ -164,26 +245,122 @@
             display: flex;
             justify-content: space-between;
             margin-top: 15px;
+            position: relative;
+            z-index: 2;
         }
         .button {
-            padding: 8px 16px;
+            padding: 10px 20px;
             background-color: #4a4a4a;
             color: #f0f0f0;
             text-decoration: none;
-            border-radius: 4px;
-            transition: background-color 0.3s ease;
+            border-radius: 5px;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            font-weight: bold;
+            text-align: center;
+            flex: 1;
+            margin: 0 5px;
+            position: relative;
+            z-index: 2;
         }
         .button:hover {
             background-color: #5a5a5a;
+            transform: translateY(-2px);
+        }
+        .button:active {
+            transform: translateY(1px);
+        }
+        
+        .result .image-container {
+            position: relative;
+            width: 100%;
+            padding-top: 56.25%; /* 16:9 aspect ratio */
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+
+        .result .image-container img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: auto;
+            object-fit: cover;
+            object-position: top center; /* This ensures we show from the top */
+        }
+
+        .result-link {
+            display: block;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .result-link:hover {
+            text-decoration: none;
+        }
+
+        .view-toggle {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 20px;
+        }
+
+        .results-grid {
+            display: grid;
+            gap: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        }
+
+        .results-list {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .results-list .result {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        /* Responsive grid adjustments */
+        @media (min-width: 768px) {
+            .results-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .results-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (min-width: 1440px) {
+            .results-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Cultural Radar</h1>
+        <h1 id="title">Cultural Radar</h1>
         <form id="searchForm">
             <input type="text" name="keyword" id="searchInput" placeholder="Explore culture..." required>
-            <button type="submit">Discover</button>
+            <button type="submit" id="searchButton">Discover</button>
+            <button type="button" id="toggleView" aria-label="Toggle view">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="14" width="7" height="7"></rect>
+                    <rect x="3" y="14" width="7" height="7"></rect>
+                </svg>
+            </button>
         </form>
         <div class="search-tags">
             <span class="search-tag" data-tag="theatre">Theatre</span>
@@ -192,15 +369,77 @@
             <span class="search-tag" data-tag="art">Art</span>
             <span class="search-tag" data-tag="music">Music</span>
             <span class="search-tag" data-tag="books">Books</span>
+            <span class="search-tag" data-tag="restaurant">Restaurant</span>
         </div>
         <div id="loading">
             <div class="spinner"></div>
             <p id="loading-text">Curating recommendations...</p>
         </div>
-        <div id="results"></div>
+        <div id="results" class="results-grid">
+            <!-- Results will be populated here -->
+        </div>
     </div>
 
     <script>
+        let allArticles = []; // Store all fetched articles
+
+        function displayArticles(data) {
+            allArticles = data; // Store all fetched articles
+            updateDisplayedArticles();
+        }
+
+        function updateDisplayedArticles() {
+            const resultsDiv = document.getElementById('results');
+            const isGridView = resultsDiv.classList.contains('results-grid');
+            let articlesToShow = allArticles;
+
+            if (isGridView) {
+                // Adjust number of articles based on screen width
+                const screenWidth = window.innerWidth;
+                if (screenWidth >= 1440) {
+                    articlesToShow = allArticles.slice(0, Math.min(12, allArticles.length));
+                } else if (screenWidth >= 1024) {
+                    articlesToShow = allArticles.slice(0, Math.min(9, allArticles.length));
+                } else if (screenWidth >= 768) {
+                    articlesToShow = allArticles.slice(0, Math.min(6, allArticles.length));
+                } else {
+                    articlesToShow = allArticles.slice(0, Math.min(4, allArticles.length));
+                }
+            } else {
+                articlesToShow = allArticles.slice(0, Math.min(5, allArticles.length));
+            }
+
+            resultsDiv.innerHTML = '';
+            
+            articlesToShow.forEach(result => {
+                const resultDiv = document.createElement('div');
+                resultDiv.classList.add('result');
+                const proxyImageUrl = result.image ? `/proxy_image?url=${encodeURIComponent(result.image)}` : null;
+                resultDiv.innerHTML = `
+                    <div class="image-container">
+                        <a href="${result.link}" target="_blank">
+                            ${proxyImageUrl 
+                                ? `<img src="${proxyImageUrl}" alt="${result.title}" onerror="this.onerror=null; this.src='/static/placeholder.jpg';">`
+                                : '<img src="/static/placeholder.jpg" alt="Placeholder image">'}
+                        </a>
+                    </div>
+                    <div class="content">
+                        <h2>${result.title}</h2>
+                        <p class="recommended-by">Recommended by ${result.recommended_by}</p>
+                        <p class="recommender-info">${result.recommender_info}</p>
+                        <div class="snippet">${result.snippet}</div>
+                        <div class="button-container">
+                            <a href="${result.link}" target="_blank" class="button">Read Guardian Article</a>
+                            ${result.recommendation_link 
+                                ? `<a href="${result.recommendation_link}" target="_blank" class="button">View Recommendation</a>`
+                                : '<span class="button" style="opacity: 0.5; cursor: not-allowed;">No Recommendation Link</span>'}
+                        </div>
+                    </div>
+                `;
+                resultsDiv.appendChild(resultDiv);
+            });
+        }
+
         document.getElementById('searchForm').addEventListener('submit', function(event) {
             event.preventDefault();
             performSearch();
@@ -212,6 +451,46 @@
                 performSearch();
             });
         });
+
+        document.getElementById('title').addEventListener('click', function() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('loading').style.display = 'none';
+        });
+
+        document.getElementById('toggleView').addEventListener('click', function(event) {
+            event.preventDefault(); // Prevent form submission
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.classList.toggle('results-grid');
+            resultsDiv.classList.toggle('results-list');
+            
+            // Update the displayed articles when toggling view
+            updateDisplayedArticles();
+            
+            // Change the icon based on the current view
+            if (resultsDiv.classList.contains('results-grid')) {
+                this.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="8" y1="6" x2="21" y2="6"></line>
+                        <line x1="8" y1="12" x2="21" y2="12"></line>
+                        <line x1="8" y1="18" x2="21" y2="18"></line>
+                        <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                        <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                        <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                    </svg>`;
+            } else {
+                this.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="14" width="7" height="7"></rect>
+                        <rect x="3" y="14" width="7" height="7"></rect>
+                    </svg>`;
+            }
+        });
+
+        // Add event listener for window resize
+        window.addEventListener('resize', updateDisplayedArticles);
 
         function performSearch() {
             const formData = new FormData(document.getElementById('searchForm'));
@@ -279,33 +558,6 @@
                 loadingDiv.style.display = 'none';
                 resultsDiv.innerHTML = '<p>An error occurred while searching. Please try again.</p>';
                 console.error('Error:', error);
-            });
-        }
-
-        function displayArticles(data) {
-            const resultsDiv = document.getElementById('results');
-            resultsDiv.innerHTML = '';
-            
-            data.forEach(result => {
-                const resultDiv = document.createElement('div');
-                resultDiv.classList.add('result');
-                const proxyImageUrl = result.image ? `/proxy_image?url=${encodeURIComponent(result.image)}` : null;
-                resultDiv.innerHTML = `
-                    ${proxyImageUrl 
-                        ? `<img src="${proxyImageUrl}" alt="${result.title}" onerror="this.onerror=null; this.src='/static/placeholder.jpg';">`
-                        : '<img src="/static/placeholder.jpg" alt="Placeholder image">'}
-                    <h2>${result.title}</h2>
-                    <p><strong>Recommended by:</strong> ${result.recommended_by}</p>
-                    <p class="recommender-info">${result.recommender_info}</p>
-                    <div class="snippet">${result.snippet}</div>
-                    <div class="button-container">
-                        <a href="${result.link}" target="_blank" class="button">Read Guardian Article</a>
-                        ${result.recommendation_link 
-                            ? `<a href="${result.recommendation_link}" target="_blank" class="button">View Recommendation</a>`
-                            : ''}
-                    </div>
-                `;
-                resultsDiv.appendChild(resultDiv);
             });
         }
     </script>

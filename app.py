@@ -38,13 +38,31 @@ def search():
         logger.exception(f"Error occurred during search for keyword '{keyword}': {str(e)}")
         return jsonify({"error": "An error occurred during the search. Please try again."}), 500
 
-def extract_all_links(soup):
+def extract_external_links(soup):
     links = {}
     content = soup.find('div', class_='content__article-body')
     if content:
-        for p in content.find_all('p', class_='dcr-uj7d5w'):
-            for a in p.find_all('a', href=True):
+        # Look for links with specific attributes
+        for a in content.find_all('a', attrs={'data-link-name': ['in body link', 'auto-linked-tag']}):
+            if not a['href'].startswith(('https://www.theguardian.com', 'http://www.theguardian.com', '/')):
                 links[a.text.strip()] = a['href']
+        
+        # Look for links within paragraphs that contain specific keywords
+        keywords = ['recommends', 'recommendation', 'suggests', 'favourite', 'favorite', 'pick']
+        for p in content.find_all('p'):
+            if any(keyword in p.text.lower() for keyword in keywords):
+                for a in p.find_all('a', href=True):
+                    if not a['href'].startswith(('https://www.theguardian.com', 'http://www.theguardian.com', '/')):
+                        links[a.text.strip()] = a['href']
+        
+        # Look for links that follow a colon
+        for p in content.find_all('p'):
+            colon_splits = re.split(r':\s*', p.text)
+            if len(colon_splits) > 1:
+                for a in p.find_all('a', href=True):
+                    if not a['href'].startswith(('https://www.theguardian.com', 'http://www.theguardian.com', '/')):
+                        links[a.text.strip()] = a['href']
+    
     return links
 
 def scrape_guardian_on_my_radar(keyword):
@@ -83,11 +101,11 @@ def scrape_guardian_on_my_radar(keyword):
                     snippet = extract_snippet(article_soup, keyword)
                     recommended_by = extract_recommended_by(article_soup)
                     recommender_info = extract_recommender_info(article_soup)
-                    all_links = extract_all_links(article_soup)
+                    external_links = extract_external_links(article_soup)
                     
                     logger.info(f"Found article: {title}")
                     logger.info(f"Image URL: {image}")
-                    logger.info(f"All links: {all_links}")
+                    logger.info(f"External links: {external_links}")
                     
                     articles.append({
                         'title': title,
@@ -96,7 +114,7 @@ def scrape_guardian_on_my_radar(keyword):
                         'link': article_url,
                         'recommended_by': recommended_by,
                         'recommender_info': recommender_info,
-                        'all_links': all_links
+                        'external_links': external_links
                     })
                 except Exception as e:
                     logger.error(f"Error processing article {article_url}: {e}")
@@ -191,38 +209,45 @@ def extract_recommended_by(soup):
             return title_text.split("On my radar:")[1].split("'s cultural highlights")[0].strip()
     return "Unknown"
 
+from urllib.parse import urlparse
+
 def format_results_with_ai(results, keyword):
     formatted_results = []
     for result in results:
-        prompt = f"""You are reviewing an article about a famous person's cultural recommendations. 
-        Extract detailed information about {keyword} from the following article:
+        external_links_str = "\n".join([f"{key}: {value}" for key, value in result['external_links'].items()])
+        prompt = f"""You are an expert at analyzing cultural recommendations. Your task is to extract precise information about a {keyword} recommendation from the following article:
 
         Title: {result['title']}
         Snippet: {result['snippet']}
         Link: {result['link']}
         Image: {result['image']}
+        External Links:
+        {external_links_str}
 
-        The title must be the specific name of the recommended {keyword} from the article. 
-        Also, find the name of the person giving the recommendation and a brief description of who they are.
-        Choose the most relevant link from the following list to be used as the recommendation link:
-        {json.dumps(result['all_links'])}
+        Please follow these guidelines:
+        1. Identify the EXACT name or title of the recommended {keyword}. This should be as specific as possible (e.g., the exact title of a TV show, name of a theatre production, title of an artwork, etc.).
+        2. Find the name of the person giving the recommendation.
+        3. Provide a brief description of who the recommender is.
+        4. Write a detailed paragraph (at least 3-4 sentences) about the recommendation, based on the information in the article. Include why it was recommended and any interesting details mentioned.
+        5. Find an external link for this recommendation. This link MUST NOT be to The Guardian website. It should lead directly to the recommended item if possible (e.g., official website, streaming platform, online gallery, etc.). Only include a link if you are certain it is real and relevant. If no suitable external link is found, do not include one.
 
-        If no relevant information is found, say 'No relevant information'.
-        Format the response as:
-        Title: [Recommended {keyword}]
+        If no relevant information is found, respond with 'No relevant information'.
+
+        Format your response as follows:
+        Recommendation: [EXACT name/title of the recommended {keyword}]
         Recommended by: [Name of the person giving the recommendation]
         Recommender info: [Brief description of the person giving the recommendation]
-        Snippet: [Relevant information or direct quotes about the recommendation, excluding the recommendation link]
-        Recommended link: [The full URL of the most relevant link from the provided list]
+        Snippet: [Detailed paragraph about the recommendation]
+        Recommendation link: [The full URL of a real external link, not to The Guardian. Omit this line if no suitable link is found.]
         """
         
         response = openai.ChatCompletion.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "system", "content": "You are a helpful assistant specialized in analyzing cultural recommendations."},
                 {"role": "user", "content": prompt}
             ],
-            max_tokens=200
+            max_tokens=400
         )
         ai_result = response.choices[0].message['content'].strip()
         
@@ -230,26 +255,37 @@ def format_results_with_ai(results, keyword):
             continue
 
         # Extract information from AI result
-        title_match = re.search(r'Title: (.+)', ai_result)
+        recommendation_match = re.search(r'Recommendation: (.+)', ai_result)
         recommended_by_match = re.search(r'Recommended by: (.+)', ai_result)
         recommender_info_match = re.search(r'Recommender info: (.+)', ai_result)
         snippet_match = re.search(r'Snippet: (.+)', ai_result, re.DOTALL)
-        recommended_link_match = re.search(r'Recommended link: (.+)', ai_result)
+        recommendation_link_match = re.search(r'Recommendation link: (.+)', ai_result)
         
-        if all([title_match, recommended_by_match, recommender_info_match, snippet_match, recommended_link_match]):
-            recommendation_link = recommended_link_match.group(1).strip()
-            # Ensure the link is a full URL
-            if not recommendation_link.startswith(('http://', 'https://')):
-                recommendation_link = f"https://{recommendation_link}"
+        if all([recommendation_match, recommended_by_match, recommender_info_match, snippet_match]):
+            recommendation_link = recommendation_link_match.group(1).strip() if recommendation_link_match else None
+            
+            # Ensure the link is not to The Guardian and is a valid URL
+            if recommendation_link and not recommendation_link.startswith(('https://www.theguardian.com', 'http://www.theguardian.com')):
+                try:
+                    # Basic URL validation
+                    parsed_url = urlparse(recommendation_link)
+                    if all([parsed_url.scheme, parsed_url.netloc]):
+                        valid_link = recommendation_link
+                    else:
+                        valid_link = None
+                except:
+                    valid_link = None
+            else:
+                valid_link = None
             
             formatted_results.append({
-                'title': title_match.group(1).strip(),
+                'title': recommendation_match.group(1).strip(),
                 'snippet': snippet_match.group(1).strip(),
                 'image': result['image'],
                 'recommended_by': recommended_by_match.group(1).strip(),
                 'recommender_info': recommender_info_match.group(1).strip(),
                 'link': result['link'],
-                'recommendation_link': recommendation_link
+                'recommendation_link': valid_link
             })
 
     return formatted_results
