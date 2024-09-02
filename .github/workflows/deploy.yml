@@ -1,0 +1,60 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main  # Set this to your default branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'  # Replace with your Python version
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt  # If you have a requirements.txt file
+      
+    - name: List directory contents
+      run: ls -R
+      
+    - name: Display Python version
+      run: python --version
+      
+    # Add any build steps here, for example:
+    # - name: Build site
+    #   run: python build_site.py
+
+    - name: Prepare files for deployment
+      run: |
+        mkdir _site
+        cp -r * _site/ || true
+        echo "Files in _site directory:"
+        ls -R _site
+
+    - name: Deploy
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./_site
+
+    - name: Check _site directory
+      if: failure()
+      run: |
+        echo "Contents of _site directory:"
+        ls -R _site
+        echo "Disk usage of _site directory:"
+        du -sh _site
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      if: failure()
+      with:
+        name: site-content
+        path: _site
