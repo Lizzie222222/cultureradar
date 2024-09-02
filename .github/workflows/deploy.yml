@@ -21,22 +21,10 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt  # If you have a requirements.txt file
       
-    - name: List directory contents
-      run: ls -R
-      
-    - name: Display Python version
-      run: python --version
-      
-    # Add any build steps here, for example:
-    # - name: Build site
-    #   run: python build_site.py
-
-    - name: Prepare files for deployment
+    - name: Build site
       run: |
-        mkdir -p _site
-        cp -r * _site/ || true
-        echo "Files in _site directory:"
-        ls -R _site
+        # Add your build command here, for example:
+        # python build_site.py
 
     - name: Deploy
       uses: peaceiris/actions-gh-pages@v3
