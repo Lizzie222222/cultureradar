@@ -9,10 +9,10 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.x'  # Replace with your Python version
 
@@ -27,7 +27,7 @@ jobs:
         echo "Build complete. Contents of current directory:"
         ls -R
         echo "Contents of _site directory (if it exists):"
-        ls -R _site || echo "_site directory not found"y
+        ls -R _site || echo "_site directory not found"
 
     - name: Debug build output
       run: |
@@ -45,12 +45,12 @@ jobs:
       if: always()
       run: |
         echo "Contents of _site directory:"
-        ls -R _site
+        ls -R _site || echo "_site directory not found"
         echo "Disk usage of _site directory:"
-        du -sh _site
+        du -sh _site || echo "_site directory not found"
 
     - name: Upload artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: site-content
