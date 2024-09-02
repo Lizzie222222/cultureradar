@@ -28,7 +28,12 @@ jobs:
 
     - name: Prepare _site directory
       run: |
-        mkdir -p _site
+        if [ -d "_site" ]; then
+          echo "_site directory already exists"
+          rm -rf _site/*
+        else
+          mkdir _site
+        fi
         cp -r templates _site/
         cp app.py _site/
         cp .nojekyll _site/ || touch _site/.nojekyll
