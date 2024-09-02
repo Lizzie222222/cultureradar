@@ -45,8 +45,8 @@ jobs:
         publish_dir: ./_site
         force_orphan: true
 
-    - name: Check _site directory (on failure)
-      if: failure()
+    - name: Debug _site directory
+      if: always()
       run: |
         echo "Contents of _site directory:"
         ls -R _site
@@ -59,8 +59,9 @@ jobs:
       with:
         name: site-content
         path: _site
+      continue-on-error: true
 
-    - name: Debug information
+    - name: Debug upload artifact
       if: always()
       run: |
         echo "GitHub workspace: $GITHUB_WORKSPACE"
@@ -68,3 +69,5 @@ jobs:
         pwd
         echo "Directory contents:"
         ls -la
+        echo "Environment variables:"
+        env
