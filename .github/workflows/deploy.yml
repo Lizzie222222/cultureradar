@@ -9,10 +9,10 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: '3.x'  # Replace with your Python version
 
@@ -23,8 +23,16 @@ jobs:
       
     - name: Build site
       run: |
-        # Add your build command here, for example:
-        # python build_site.py
+        python build_site.py  # Your actual build command
+        echo "Build complete. Contents of current directory:"
+        ls -R
+        echo "Contents of _site directory (if it exists):"
+        ls -R _site || echo "_site directory not found"y
+
+    - name: Debug build output
+      run: |
+        echo "Current directory contents:"
+        ls -R
 
     - name: Deploy
       uses: peaceiris/actions-gh-pages@v3
