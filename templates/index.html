@@ -378,14 +378,16 @@
         <div id="results" class="results-grid">
             <!-- Results will be populated here -->
         </div>
+        <div id="timeTaken"></div> <!-- Add this div to display the time taken -->
     </div>
 
     <script>
         let allArticles = []; // Store all fetched articles
 
         function displayArticles(data) {
-            allArticles = data; // Store all fetched articles
+            allArticles = data.results; // Store all fetched articles
             updateDisplayedArticles();
+            document.getElementById('timeTaken').innerHTML = `Time taken: ${data.time_taken.toFixed(2)} seconds`; // Display the time taken
         }
 
         function updateDisplayedArticles() {

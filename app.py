@@ -24,16 +24,20 @@ logger = logging.getLogger(__name__)
 def index():
     return render_template('index.html')
 
+from time import time
+
 @app.route('/search', methods=['POST'])
 def search():
     keyword = request.form['keyword']
+    start_time = time()  # Start the timer
     try:
         results = scrape_guardian_on_my_radar(keyword)
         if not results:
             logger.warning(f"No articles found for keyword: {keyword}")
-            return jsonify([])
+            return jsonify({"results": [], "time_taken": 0})
         formatted_results = format_results_with_ai(results, keyword)
-        return jsonify(formatted_results)  # Return all results
+        time_taken = time() - start_time  # Calculate the time taken
+        return jsonify({"results": formatted_results, "time_taken": time_taken})
     except Exception as e:
         logger.exception(f"Error occurred during search for keyword '{keyword}': {str(e)}")
         return jsonify({"error": "An error occurred during the search. Please try again."}), 500
