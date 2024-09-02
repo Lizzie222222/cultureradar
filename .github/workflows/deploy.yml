@@ -21,18 +21,28 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt  # If you have a requirements.txt file
       
-    - name: Debug project structure
+    - name: Debug project structure before
       run: |
-        echo "Current directory structure:"
+        echo "Current directory structure before creating static files:"
         tree -L 3 || ls -R
 
     - name: Create static files
       run: |
-        mkdir static
-        cp -r templates static/
-        cp app.py static/
+        mkdir -p static/templates
+        cp -r templates/* static/templates/ || echo "No templates to copy"
+        cp app.py static/ || echo "app.py not found"
+        if [ -d "static" ]; then
+          cp -r static/* static/ || echo "No additional static files to copy"
+        fi
         echo "Static files created. Directory structure:"
         tree static -L 3 || ls -R static
+
+    - name: Debug static directory
+      run: |
+        echo "Contents of static directory:"
+        ls -la static
+        echo "Contents of static/templates directory (if it exists):"
+        ls -la static/templates || echo "static/templates directory not found"
 
     - name: Deploy
       uses: peaceiris/actions-gh-pages@v3
@@ -48,3 +58,11 @@ jobs:
         name: site-content
         path: static
         if-no-files-found: warn
+
+    - name: Debug if upload fails
+      if: failure()
+      run: |
+        echo "Upload artifact step failed. Current directory structure:"
+        tree -L 3 || ls -R
+        echo "Contents of static directory:"
+        ls -la static || echo "static directory not found"
