@@ -21,18 +21,23 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt  # If you have a requirements.txt file
       
+    - name: Debug before build
+      run: |
+        echo "Current directory structure before build:"
+        tree -L 3 || ls -R
+
     - name: Build site
       run: |
         python build_site.py  # Your actual build command
-        echo "Build complete. Contents of current directory:"
-        ls -R
+        echo "Build complete. Current directory structure after build:"
+        tree -L 3 || ls -R
+
+    - name: Debug _site directory
+      run: |
         echo "Contents of _site directory (if it exists):"
         ls -R _site || echo "_site directory not found"
-
-    - name: Debug build output
-      run: |
-        echo "Current directory contents:"
-        ls -R
+        echo "Disk usage of _site directory:"
+        du -sh _site || echo "_site directory not found"
 
     - name: Deploy
       uses: peaceiris/actions-gh-pages@v3
@@ -41,29 +46,10 @@ jobs:
         publish_dir: ./_site
         force_orphan: true
 
-    - name: Debug _site directory
-      if: always()
-      run: |
-        echo "Contents of _site directory:"
-        ls -R _site || echo "_site directory not found"
-        echo "Disk usage of _site directory:"
-        du -sh _site || echo "_site directory not found"
-
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       if: always()
       with:
         name: site-content
         path: _site
-      continue-on-error: true
-
-    - name: Debug upload artifact
-      if: always()
-      run: |
-        echo "GitHub workspace: $GITHUB_WORKSPACE"
-        echo "Current directory:"
-        pwd
-        echo "Directory contents:"
-        ls -la
-        echo "Environment variables:"
-        env
+        if-no-files-found: warn
