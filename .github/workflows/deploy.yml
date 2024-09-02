@@ -21,29 +21,24 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt  # If you have a requirements.txt file
       
-    - name: Debug before build
+    - name: Debug project structure
       run: |
-        echo "Current directory structure before build:"
+        echo "Current directory structure:"
         tree -L 3 || ls -R
 
-    - name: Build site
+    - name: Create static files
       run: |
-        python build_site.py  # Your actual build command
-        echo "Build complete. Current directory structure after build:"
-        tree -L 3 || ls -R
-
-    - name: Debug _site directory
-      run: |
-        echo "Contents of _site directory (if it exists):"
-        ls -R _site || echo "_site directory not found"
-        echo "Disk usage of _site directory:"
-        du -sh _site || echo "_site directory not found"
+        mkdir static
+        cp -r templates static/
+        cp app.py static/
+        echo "Static files created. Directory structure:"
+        tree static -L 3 || ls -R static
 
     - name: Deploy
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./_site
+        publish_dir: ./static
         force_orphan: true
 
     - name: Upload artifact
@@ -51,5 +46,5 @@ jobs:
       if: always()
       with:
         name: site-content
-        path: _site
+        path: static
         if-no-files-found: warn
