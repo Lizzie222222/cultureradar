@@ -21,34 +21,25 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt  # If you have a requirements.txt file
       
-    - name: Debug project structure before
+    - name: Debug project structure
       run: |
-        echo "Current directory structure before creating static files:"
+        echo "Current directory structure:"
         tree -L 3 || ls -R
 
-    - name: Create static files
+    - name: Prepare _site directory
       run: |
-        mkdir -p static/templates
-        cp -r templates/* static/templates/ || echo "No templates to copy"
-        cp app.py static/ || echo "app.py not found"
-        if [ -d "static" ]; then
-          cp -r static/* static/ || echo "No additional static files to copy"
-        fi
-        echo "Static files created. Directory structure:"
-        tree static -L 3 || ls -R static
-
-    - name: Debug static directory
-      run: |
-        echo "Contents of static directory:"
-        ls -la static
-        echo "Contents of static/templates directory (if it exists):"
-        ls -la static/templates || echo "static/templates directory not found"
+        mkdir -p _site
+        cp -r templates _site/
+        cp app.py _site/
+        cp .nojekyll _site/ || touch _site/.nojekyll
+        echo "Contents of _site directory:"
+        ls -R _site
 
     - name: Deploy
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./static
+        publish_dir: ./_site
         force_orphan: true
 
     - name: Upload artifact
@@ -56,7 +47,7 @@ jobs:
       if: always()
       with:
         name: site-content
-        path: static
+        path: _site
         if-no-files-found: warn
 
     - name: Debug if upload fails
@@ -64,5 +55,5 @@ jobs:
       run: |
         echo "Upload artifact step failed. Current directory structure:"
         tree -L 3 || ls -R
-        echo "Contents of static directory:"
-        ls -la static || echo "static directory not found"
+        echo "Contents of _site directory:"
+        ls -la _site || echo "_site directory not found"
