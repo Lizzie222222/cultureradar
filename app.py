@@ -28,7 +28,7 @@ def index():
 @app.route('/search', methods=['POST'])
 def search():
     keyword = request.form['keyword']
-    start_time = time()
+    start_time = time()  # Reset the timer here for each new search
     try:
         results = scrape_guardian_on_my_radar(keyword)
         if not results:
@@ -227,14 +227,13 @@ def format_single_result(result, keyword):
     2. Name of recommender.
     3. Brief description of recommender.
     4. 3-4 sentence paragraph about the recommendation, including why it was recommended and interesting details.
-    5. External link for the recommendation (not to The Guardian, must be real and relevant).
+    5. DO NOT suggest an external link. Only use links explicitly provided in the External Links section.
 
     Format:
     Recommendation: [EXACT name/title]
     Recommended by: [Name]
     Recommender info: [Brief description]
     Snippet: [Detailed paragraph]
-    Recommendation link: [Full URL, omit if not found]
 
     If no relevant information, respond with 'No relevant information'.
     """
@@ -260,28 +259,22 @@ def format_single_result(result, keyword):
     recommended_by_match = re.search(r'Recommended by: (.+)', ai_result)
     recommender_info_match = re.search(r'Recommender info: (.+)', ai_result)
     snippet_match = re.search(r'Snippet: (.+)', ai_result, re.DOTALL)
-    recommendation_link_match = re.search(r'Recommendation link: (.+)', ai_result)
     
     if all([recommendation_match, recommended_by_match, recommender_info_match, snippet_match]):
-        recommendation_link = recommendation_link_match.group(1).strip() if recommendation_link_match else None
+        recommendation = recommendation_match.group(1).strip()
         
-        if recommendation_link and not recommendation_link.startswith(('https://www.theguardian.com', 'http://www.theguardian.com')):
-            try:
-                parsed_url = urlparse(recommendation_link)
-                valid_link = recommendation_link if all([parsed_url.scheme, parsed_url.netloc]) else None
-            except:
-                valid_link = None
-        else:
-            valid_link = None
+        # Find an exact match for the recommendation in the external links
+        recommendation_link = next((url for name, url in result['external_links'].items() 
+                                    if name.lower() == recommendation.lower()), None)
         
         return {
-            'title': recommendation_match.group(1).strip(),
+            'title': recommendation,
             'snippet': snippet_match.group(1).strip(),
             'image': result['image'],
             'recommended_by': recommended_by_match.group(1).strip(),
             'recommender_info': recommender_info_match.group(1).strip(),
             'link': result['link'],
-            'recommendation_link': valid_link
+            'recommendation_link': recommendation_link
         }
     
     return None
@@ -308,4 +301,4 @@ def proxy_image():
         return "Error loading image", 500
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5006)
+    app.run(debug=True, port=5007)
