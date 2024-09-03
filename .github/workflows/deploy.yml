@@ -3,7 +3,7 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches:
-      - main  # Set this to your default branch
+      - main
 
 jobs:
   deploy:
@@ -14,33 +14,32 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.x'  # Replace with your Python version
+        python-version: '3.x'
 
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt  # If you have a requirements.txt file
-      
+        pip install -r requirements.txt
+
     - name: Debug project structure
       run: |
         echo "Current directory structure:"
         tree -L 3 || ls -R
 
-    - name: Prepare _site directory
+    - name: Prepare deployment files
       run: |
-        mkdir -p _site || true
-        rm -rf _site/*
-        cp -r templates _site/
-        cp app.py _site/
-        cp .nojekyll _site/ || touch _site/.nojekyll
-        echo "Contents of _site directory:"
-        ls -R _site
+        mkdir deploy
+        cp -r templates deploy/
+        cp app.py deploy/
+        touch deploy/.nojekyll
+        echo "Contents of deploy directory:"
+        ls -R deploy
 
     - name: Deploy
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./_site
+        publish_dir: ./deploy
         force_orphan: true
 
     - name: Upload artifact
@@ -48,7 +47,7 @@ jobs:
       if: always()
       with:
         name: site-content
-        path: _site
+        path: deploy
         if-no-files-found: warn
 
     - name: Debug if upload fails
@@ -56,5 +55,5 @@ jobs:
       run: |
         echo "Upload artifact step failed. Current directory structure:"
         tree -L 3 || ls -R
-        echo "Contents of _site directory:"
-        ls -la _site || echo "_site directory not found"
+        echo "Contents of deploy directory:"
+        ls -la deploy || echo "deploy directory not found"
