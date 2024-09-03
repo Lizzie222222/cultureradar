@@ -19,47 +19,35 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt
+        pip install Flask
 
-    - name: Prepare deployment files
+    - name: Prepare static files
       run: |
-        mkdir deploy
-        cp -r templates deploy/
-        cp app.py deploy/
-        cp requirements.txt deploy/
-        [ -f .env ] && cp .env deploy/ || echo "No .env file found"
-        touch deploy/.nojekyll
-        echo "Contents of deploy directory:"
-        ls -R deploy
+        mkdir _site
+        cp -r templates _site/
+        cp -r static _site/ || echo "No static directory found"
+        python -c "
+        import flask
+        app = flask.Flask(__name__)
+        with app.app_context():
+            with open('_site/index.html', 'w') as f:
+                f.write(flask.render_template('index.html'))
+        "
+        touch _site/.nojekyll
 
     - name: Deploy
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./deploy
+        publish_dir: ./_site
         force_orphan: true
-
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: site-content
-        path: |
-          deploy/templates
-          deploy/app.py
-          deploy/requirements.txt
-          deploy/.nojekyll
-          deploy/.env
-        if-no-files-found: warn
 
     - name: Debug if any step fails
       if: failure()
       run: |
         echo "A step has failed. Current directory structure:"
         ls -R
-        echo "Contents of deploy directory:"
-        ls -la deploy || echo "deploy directory not found"
+        echo "Contents of _site directory:"
+        ls -la _site || echo "_site directory not found"
         echo "Disk usage:"
-        du -sh deploy
-        echo "Environment variables:"
-        env
+        du -sh _site
