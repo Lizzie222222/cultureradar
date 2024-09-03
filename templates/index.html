@@ -351,9 +351,9 @@
     <div class="container">
         <h1 id="title">Cultural Radar</h1>
         <form id="searchForm">
-            <input type="text" name="keyword" id="searchInput" placeholder="Explore culture..." required>
-            <button type="submit" id="searchButton">Discover</button>
-            <button type="button" id="toggleView" aria-label="Toggle view">
+            <input type="text" id="searchInput" name="keyword" placeholder="Enter a keyword..." required>
+            <button type="submit" id="searchButton">Search</button>
+            <button id="toggleView">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <rect x="3" y="3" width="7" height="7"></rect>
                     <rect x="14" y="3" width="7" height="7"></rect>
@@ -363,9 +363,6 @@
             </button>
         </form>
         <div class="search-tags">
-            <span class="search-tag" data-tag="theatre">Theatre</span>
-            <span class="search-tag" data-tag="youtube">YouTube</span>
-            <span class="search-tag" data-tag="tv">TV</span>
             <span class="search-tag" data-tag="art">Art</span>
             <span class="search-tag" data-tag="music">Music</span>
             <span class="search-tag" data-tag="books">Books</span>
@@ -378,16 +375,16 @@
         <div id="results" class="results-grid">
             <!-- Results will be populated here -->
         </div>
-        <div id="timeTaken"></div> <!-- Add this div to display the time taken -->
+        <div id="timeTaken"></div>
     </div>
 
     <script>
-        let allArticles = []; // Store all fetched articles
+        let allArticles = [];
 
         function displayArticles(data) {
-            allArticles = data.results; // Store all fetched articles
+            allArticles = data.results;
             updateDisplayedArticles();
-            document.getElementById('timeTaken').innerHTML = `Time taken: ${data.time_taken.toFixed(2)} seconds`; // Display the time taken
+            document.getElementById('timeTaken').innerHTML = `Time taken: ${data.time_taken.toFixed(2)} seconds`;
         }
 
         function updateDisplayedArticles() {
@@ -396,7 +393,6 @@
             let articlesToShow = allArticles;
 
             if (isGridView) {
-                // Adjust number of articles based on screen width
                 const screenWidth = window.innerWidth;
                 if (screenWidth >= 1440) {
                     articlesToShow = allArticles.slice(0, Math.min(12, allArticles.length));
@@ -461,15 +457,13 @@
         });
 
         document.getElementById('toggleView').addEventListener('click', function(event) {
-            event.preventDefault(); // Prevent form submission
+            event.preventDefault();
             const resultsDiv = document.getElementById('results');
             resultsDiv.classList.toggle('results-grid');
             resultsDiv.classList.toggle('results-list');
             
-            // Update the displayed articles when toggling view
             updateDisplayedArticles();
             
-            // Change the icon based on the current view
             if (resultsDiv.classList.contains('results-grid')) {
                 this.innerHTML = `
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -491,11 +485,10 @@
             }
         });
 
-        // Add event listener for window resize
         window.addEventListener('resize', updateDisplayedArticles);
 
         function performSearch() {
-            const formData = new FormData(document.getElementById('searchForm'));
+            const keyword = document.getElementById('searchInput').value;
             const loadingDiv = document.getElementById('loading');
             const loadingText = document.getElementById('loading-text');
             const resultsDiv = document.getElementById('results');
@@ -538,29 +531,33 @@
             ];
 
             let messageIndex = 0;
-            loadingText.textContent = loadingMessages[messageIndex]; // Set initial message immediately
+            loadingText.textContent = loadingMessages[messageIndex];
 
             const messageInterval = setInterval(() => {
                 messageIndex = (messageIndex + 1) % loadingMessages.length;
                 loadingText.textContent = loadingMessages[messageIndex];
-            }, 4000); // Change message every 4 seconds
+            }, 4000);
 
-            fetch('/search', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
+            setTimeout(() => {
                 clearInterval(messageInterval);
                 loadingDiv.style.display = 'none';
-                displayArticles(data);
-            })
-            .catch(error => {
-                clearInterval(messageInterval);
-                loadingDiv.style.display = 'none';
-                resultsDiv.innerHTML = '<p>An error occurred while searching. Please try again.</p>';
-                console.error('Error:', error);
-            });
+                const simulatedData = {
+                    results: [
+                        {
+                            title: "Sample Article about " + keyword,
+                            snippet: "This is a sample article snippet about " + keyword + ".",
+                            image: "https://via.placeholder.com/300",
+                            recommended_by: "John Doe",
+                            recommender_info: "Cultural Critic",
+                            link: "#",
+                            recommendation_link: "#"
+                        },
+                        // Add more sample articles as needed
+                    ],
+                    time_taken: 1.5
+                };
+                displayArticles(simulatedData);
+            }, 3000);
         }
     </script>
 </body>
