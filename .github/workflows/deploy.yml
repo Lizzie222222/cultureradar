@@ -21,18 +21,13 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
-    - name: Debug project structure
-      run: |
-        echo "Current directory structure:"
-        tree -L 3 || ls -R
-
     - name: Prepare deployment files
       run: |
         mkdir deploy
         cp -r templates deploy/
         cp app.py deploy/
         cp requirements.txt deploy/
-        cp .env deploy/ || echo "No .env file found"
+        [ -f .env ] && cp .env deploy/ || echo "No .env file found"
         touch deploy/.nojekyll
         echo "Contents of deploy directory:"
         ls -R deploy
@@ -49,17 +44,22 @@ jobs:
       if: always()
       with:
         name: site-content
-        path: deploy
+        path: |
+          deploy/templates
+          deploy/app.py
+          deploy/requirements.txt
+          deploy/.nojekyll
+          deploy/.env
         if-no-files-found: warn
 
     - name: Debug if any step fails
       if: failure()
       run: |
         echo "A step has failed. Current directory structure:"
-        tree -L 3 || ls -R
+        ls -R
         echo "Contents of deploy directory:"
         ls -la deploy || echo "deploy directory not found"
-        echo "Contents of current directory:"
-        ls -la
+        echo "Disk usage:"
+        du -sh deploy
         echo "Environment variables:"
         env
