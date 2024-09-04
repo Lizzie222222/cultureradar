@@ -19,15 +19,21 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install Flask
+        pip install Flask openai python-dotenv requests beautifulsoup4
 
     - name: Prepare static files
+      env:
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       run: |
         mkdir _site
         cp -r templates _site/
         cp -r static _site/ || echo "No static directory found"
+        echo "OPENAI_API_KEY=$OPENAI_API_KEY" > .env
         python -c "
         import flask
+        import os
+        from dotenv import load_dotenv
+        load_dotenv()
         app = flask.Flask(__name__)
         with app.app_context():
             with open('_site/index.html', 'w') as f:
